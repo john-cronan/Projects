@@ -48,6 +48,12 @@ namespace JPC.Common.Testing
         public void CombinePathDelegates(IFilesystem delegatesTo)
             => Setup(m => m.CombinePath(It.IsAny<string[]>())).Returns((Func<string[], string>)(arg => delegatesTo.CombinePath(arg)));
 
+        public void CombinePathDelegates(Func<string[], string> delegatesTo)
+            => Setup(m => m.CombinePath(It.IsAny<string[]>())).Returns((Func<string[], string>)(arg => delegatesTo(arg)));
+
+        public void CombinePathReturns(string[] arg, string returnValue)
+            => Setup(m => m.CombinePath(arg)).Returns(returnValue);
+            
         public void DirectoryExists(string directoryPath)
             => Setup(m => m.DirectoryExists(directoryPath)).Returns(true);
 
@@ -226,6 +232,9 @@ namespace JPC.Common.Testing
         public void IsPathRootedDelegates(IFilesystem delegatesTo)
             => Setup(m => m.IsPathRooted(It.IsAny<string>())).Returns((Func<string, bool>)(arg => delegatesTo.IsPathRooted(arg)));
 
+        public void IsPathRootedReturns(string path, bool value)
+            => Setup(m => m.IsPathRooted(path)).Returns(value);
+            
         public void VerifyFileCopied(string sourceFileName, string destinationFileName, bool overwrite)
             => Verify(m => m.CopyFile(sourceFileName, destinationFileName, overwrite));
 

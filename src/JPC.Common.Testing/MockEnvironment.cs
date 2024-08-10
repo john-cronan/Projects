@@ -40,6 +40,11 @@ namespace JPC.Common.Testing
             set { Setup(m => m.GetCommandLineArgs()).Returns(value); }
         }
 
+        public OperatingSystem? OperatingSystem
+        {
+            get { return Object.OperatingSystem; }
+            set { Setup(p => p.OperatingSystem).Returns(value); }
+        }
         public string MachineName
         {
             get { return Object.MachineName; }

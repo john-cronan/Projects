@@ -1,5 +1,13 @@
 ﻿namespace JPC.Common
 {
+    public enum OperatingSystem
+    {
+        Windows,
+        Linux,
+        OSX,
+        Unix
+    }
+
     public interface IEnvironment
     {
         string CommandLine { get; }
@@ -9,5 +17,6 @@
         string MachineName { get; }
         string NewLine { get; }
         string UserName { get; }
+        OperatingSystem? OperatingSystem { get; }
     }
 }

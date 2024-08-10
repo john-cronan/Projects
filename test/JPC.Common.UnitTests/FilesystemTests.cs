@@ -1,5 +1,6 @@
 ﻿using JPC.Common;
 using JPC.Common.Internal;
+using JPC.Common.Testing;
 
 namespace JPC.Common.UnitTests
 {
@@ -9,7 +10,15 @@ namespace JPC.Common.UnitTests
         [TestMethod]
         public void Split_supports_absolute_windows_paths()
         {
-            IFilesystem testee = new Filesystem(new EnvironmentWrapper());
+            // var linux = System.Runtime.InteropServices.OSPlatform.Linux;
+            // if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux))
+            // {
+            //     return;
+            // }
+
+            var environment = new MockEnvironment();
+            environment.OperatingSystem = OperatingSystem.Windows;
+            IFilesystem testee = new Filesystem(environment.Object);
             var actual = testee.SplitPath("C:\\boot.ini");
             var expected = new string[] { "C:\\", "boot.ini" };
             Assert.IsTrue(expected.SequenceEqual(actual));
@@ -24,6 +33,17 @@ namespace JPC.Common.UnitTests
 
             actual = testee.SplitPath(@"Program Files\SomeCompany\File.txt");
             expected = new string[] { "Program Files", "SomeCompany", "File.txt" };
+            Assert.IsTrue(expected.SequenceEqual(actual));
+        }
+
+        [TestMethod]
+        public void Split_supports_absolute_linux_paths()
+        {
+            var environment = new MockEnvironment();
+            environment.OperatingSystem = OperatingSystem.Linux;
+            IFilesystem testee = new Filesystem(environment.Object);
+            var actual = testee.SplitPath("/dev/hd0");
+            var expected = new string[] { "/", "dev", "hd0" };
             Assert.IsTrue(expected.SequenceEqual(actual));
         }
 

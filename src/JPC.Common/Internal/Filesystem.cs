@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -9,16 +10,35 @@ namespace JPC.Common.Internal
 {
     internal class Filesystem : IFilesystem
     {
+        private readonly char _altDirectorySeparatorChar;
+        private readonly char _directorySeparatorChar;
         private readonly IEnvironment _environment;
         private readonly IFilesystem _this;
+        private readonly char _volumeSeparatorChar;
 
-        char IFilesystem.AltDirectorySeparator => Path.AltDirectorySeparatorChar;
-        char IFilesystem.DirectorySeparator => Path.DirectorySeparatorChar;
+        char IFilesystem.AltDirectorySeparator => _altDirectorySeparatorChar;
+        char IFilesystem.DirectorySeparator => _directorySeparatorChar;
         IEnvironment IFilesystem.Environment => _environment;
 
 
         public Filesystem(IEnvironment environment)
         {
+            if (environment.OperatingSystem == OperatingSystem.Windows)
+            {
+                _directorySeparatorChar = '\\';
+                _altDirectorySeparatorChar = '/';
+                _volumeSeparatorChar = ':';
+            }
+            else if (environment.OperatingSystem == OperatingSystem.Linux)
+            {
+                _directorySeparatorChar = '/';
+                _altDirectorySeparatorChar = _directorySeparatorChar;
+                _volumeSeparatorChar = '/';
+            }
+            else
+            {
+                throw new NotSupportedException($"{environment.OperatingSystem.ToString()} not supported");
+            }
             _environment = environment;
             _this = this;
         }
@@ -330,7 +350,19 @@ namespace JPC.Common.Internal
             //
             var pathExpanded = Expand(path);
             var arrayBuilder = new List<string>();
-            var nodes = ParsePath(pathExpanded).ToArray();
+            PathNode[] nodes;
+            if (_environment.OperatingSystem == OperatingSystem.Windows)
+            {
+                nodes = ParsePathWindows(pathExpanded).ToArray();
+            }
+            else if (_environment.OperatingSystem == OperatingSystem.Linux)
+            {
+                nodes = ParsePathLinux(pathExpanded).ToArray();
+            }
+            else
+            {
+                throw new NotSupportedException($"{_environment.OperatingSystem.ToString()} not supported");
+            }
             if (nodes[0].NodeType == PathNodeType.VolumeName && nodes.Count() > 1 && nodes[1].NodeType == PathNodeType.Separator)
             {
                 arrayBuilder.Add(nodes[0].Text + nodes[1].Text);
@@ -339,12 +371,12 @@ namespace JPC.Common.Internal
             {
                 arrayBuilder.Add(nodes[0].Text);
             }
-            arrayBuilder.AddRange(nodes.Where((n, i) => n.Text != Path.DirectorySeparatorChar.ToString() && n.Text != Path.AltDirectorySeparatorChar.ToString()
+            arrayBuilder.AddRange(nodes.Where((n, i) => n.Text != _directorySeparatorChar.ToString() && n.Text != _altDirectorySeparatorChar.ToString()
                 && i > 0).Select(n => n.Text));
             return arrayBuilder.ToArray();
         }
 
-        private IEnumerable<PathNode> ParsePath(string path)
+        private IEnumerable<PathNode> ParsePathWindows(string path)
         {
             var effectivePath = path.Trim();
             var str = new StringBuilder();
@@ -352,20 +384,54 @@ namespace JPC.Common.Internal
             for (int i = 0; i < effectivePath.Length; i++)
             {
                 var chr = effectivePath[i];
-                if (chr == Path.VolumeSeparatorChar && !volumeSeparatorRead)
+                if (chr == _volumeSeparatorChar && !volumeSeparatorRead)
                 {
                     str.Append(chr);
                     yield return new PathNode(PathNodeType.VolumeName, str.ToString());
                     str.Clear();
                     volumeSeparatorRead = true;
                 }
-                else if ((chr == Path.DirectorySeparatorChar || chr == Path.AltDirectorySeparatorChar) && i == 0)
+                else if ((chr == _directorySeparatorChar || chr == _altDirectorySeparatorChar) && i == 0)
                 {
                     str.Append(chr);
                     yield return new PathNode(PathNodeType.Separator, str.ToString());
                     str.Clear();
                 }
-                else if ((chr == Path.DirectorySeparatorChar || chr == Path.AltDirectorySeparatorChar) && i > 0)
+                else if ((chr == _directorySeparatorChar || chr == _altDirectorySeparatorChar) && i > 0)
+                {
+                    if (str.Length > 0)
+                    {
+                        yield return new PathNode(PathNodeType.Branch, str.ToString());
+                    }
+                    yield return new PathNode(PathNodeType.Separator, new string(chr, 1));
+                    str.Clear();
+                }
+                else
+                {
+                    str.Append(chr);
+                }
+            }
+            if (str.Length > 0)
+            {
+                yield return new PathNode(PathNodeType.Branch, str.ToString());
+                str.Clear();
+            }
+        }
+
+        private IEnumerable<PathNode> ParsePathLinux(string path)
+        {
+            var effectivePath = path.Trim();
+            var str = new StringBuilder();
+            var i = 0;
+            if (path[i] == _directorySeparatorChar || path[i] == _altDirectorySeparatorChar)
+            {
+                yield return new PathNode(PathNodeType.VolumeName, "/");
+                i++;
+            }
+            for (; i < effectivePath.Length; i++)
+            {
+                var chr = effectivePath[i];
+                if (chr == _volumeSeparatorChar || chr == _altDirectorySeparatorChar)
                 {
                     if (str.Length > 0)
                     {

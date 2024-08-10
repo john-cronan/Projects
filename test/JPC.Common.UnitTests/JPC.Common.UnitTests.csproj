@@ -4,7 +4,6 @@
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>disable</Nullable>
     <IsTestProject>true</IsTestProject>
-
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
@@ -21,6 +20,7 @@
  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/JPC.Common/JPC.Common.csproj" />
+    <ProjectReference Include="../../src/JPC.Common.Testing/JPC.Common.Testing.csproj" />
   </ItemGroup>
 
 </Project>
