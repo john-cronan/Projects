@@ -49,7 +49,7 @@ namespace JPC.Common.UnitTests
                 cfg.Environment.OperatingSystem = OperatingSystem.Linux;
                 cfg.Filesystem.IsPathRootedDelegates(_linuxFilesystem);
                 cfg.Filesystem.SplitPathDelegates(_linuxFilesystem);
-                cfg.Filesystem.CombinePathReturns(new string[] { "dev", "disk", "by-id" }, input);
+                cfg.Filesystem.CombinePathReturns(new string[] { "/", "dev", "disk", "by-id" }, input);
             });
             var actual = testee.MakeCanonical(input);
             Assert.AreEqual(input, actual);
